@@ -1,0 +1,49 @@
+@import url("https://fonts.googleapis.com/css?family=Lato:400,700,900");
+@import url("https://fonts.googleapis.com/css?family=Source+Code+Pro");
+
+body {
+  margin: 0;
+  font-family: "Lato", sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+code {
+  font-family: source-code-pro, Menlo, Monaco, Consolas, "Courier New",
+    monospace;
+}
+
+.section-header {
+  text-align: left;
+  margin: 0 !important;
+  margin-bottom: 10px;
+  padding: 5px 10px;
+  font-weight: 600 !important;
+  border-radius: 5px;
+  color: #1c3c5a !important;
+  font-size: 18px !important;
+  border-bottom: solid 3px #1c3c5a;
+  border-left: solid 1px #ccc;
+  border-right: solid 1px #ccc;
+  background-color: #edeff77d;
+}
+
+@media screen and (max-width: 768px) {
+  .prompt-hub-container {
+    justify-content: center;
+  }
+
+  .prompt-hub-card {
+    width: 90% !important;
+    margin: auto;
+  }
+}
+
+.rjsf .form-group fieldset {
+  border: none;
+}
+
+.output-form {
+  width: 100%;
+  padding: 4px;
+}

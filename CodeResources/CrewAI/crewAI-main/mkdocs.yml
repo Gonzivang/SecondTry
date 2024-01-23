@@ -1,0 +1,9 @@
+site_name: crewAI Documentation
+theme:
+  name: material
+  palette:
+    scheme: default
+    primary: red
+    accent: red
+  features:
+    - navigation.tabs

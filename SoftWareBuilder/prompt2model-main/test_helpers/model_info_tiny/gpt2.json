@@ -1,0 +1,7 @@
+{
+	"pretrained_model_name": "gpt2",
+	"description": "unidirectional autoregressive language model",
+	"size_bytes": "800000000",
+	"downloads": 100,
+    "_comment": "THIS FILE SHOULD ONLY BE USED FOR TESTING PURPOSES."
+}

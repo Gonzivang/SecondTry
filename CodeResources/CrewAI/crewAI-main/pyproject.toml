@@ -1,0 +1,43 @@
+
+[tool.poetry]
+name = "crewai"
+version = "0.1.32"
+description = "Cutting-edge framework for orchestrating role-playing, autonomous AI agents. By fostering collaborative intelligence, CrewAI empowers agents to work together seamlessly, tackling complex tasks."
+authors = ["Joao Moura <joaomdmoura@gmail.com>"]
+readme = "README.md"
+packages = [
+    { include = "crewai", from = "src" },
+]
+
+
+[tool.poetry.urls]
+Homepage = "https://github.com/joaomdmoura/crewai"
+Documentation = "https://github.com/joaomdmoura/CrewAI/wiki/Index"
+Repository = "https://github.com/joaomdmoura/crewai"
+
+[tool.poetry.dependencies]
+python = ">=3.9,<4.0"
+pydantic = "^2.4.2"
+langchain = "^0.1.0"
+openai = "^1.7.1"
+langchain-openai = "^0.0.2"
+
+[tool.poetry.group.dev.dependencies]
+isort = "^5.13.2"
+black = "^23.12.1"
+autoflake = "^2.2.1"
+pre-commit = "^3.6.0"
+mkdocs-material = "^9.5.3"
+
+[tool.isort]
+profile = "black"
+known_first_party = ["crewai"]
+
+[tool.poetry.group.test.dependencies]
+pytest = "^7.4"
+pytest-vcr = "^1.0.2"
+python-dotenv = "1.0.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

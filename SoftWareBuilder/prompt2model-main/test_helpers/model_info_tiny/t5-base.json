@@ -1,0 +1,7 @@
+{
+	"pretrained_model_name": "t5-base",
+	"description": "text to text generator",
+	"size_bytes": "800000000",
+	"downloads": 10000,
+    "_comment": "THIS FILE SHOULD ONLY BE USED FOR TESTING PURPOSES."
+}

@@ -1,0 +1,14 @@
+= Tracing Component
+:doctitle: Tracing
+:shortname: tracing
+:artifactid: camel-tracing
+:description: Distributed tracing common interfaces
+:since: 3.5
+:supportlevel: Stable
+:tabs-sync-option:
+
+*Since Camel {since}*
+
+This module is common interfaces and API for distributed tracing.
+
+This module is not intended to be used by end users, but they should use `camel-opentelemetry`, `camel-opentracing` or `camel-zipkin` instead.

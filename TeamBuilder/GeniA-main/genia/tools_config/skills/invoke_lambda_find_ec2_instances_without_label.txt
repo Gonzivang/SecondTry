@@ -1,0 +1,11 @@
+To invoke the AWS Lambda function 'find-ec2-instances-without-label', we need the following arguments:
+
+1. `lambda_name`: The name of the Lambda function, which is 'find-ec2-instances-without-label'.
+2. `region_name`: The AWS region where the Lambda function is deployed, which is 'us-west-2'.
+
+To execute the Lambda function, AI assistant should follow these steps:
+
+1. Call the `invoke_lambda` function with the `lambda_name`, `region_name`, and constructed `payload`.
+2. Handle the response from the `invoke_lambda` function and display the result to the user.
+
+By following this plan, we can invoke the 'find-ec2-instances-without-label' Lambda function with the required arguments and obtain the instances without the specified label.

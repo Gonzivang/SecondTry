@@ -1,0 +1,498 @@
+import {
+  Alert,
+  AlertTitle,
+  Button,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  FormControl,
+  InputLabel,
+  MenuItem,
+  Select,
+  TextField,
+} from "@mui/material";
+import validator from "@rjsf/validator-ajv8";
+import { enqueueSnackbar } from "notistack";
+import { useEffect, useState } from "react";
+import { useRecoilCallback, useRecoilValue } from "recoil";
+import { connectionsState, connectionTypesState } from "../../data/atoms";
+import { axios } from "../../data/axios";
+import { Ws } from "../../data/ws";
+import ThemedJsonForm from "../ThemedJsonForm";
+import RemoteBrowser from "./RemoteBrowser";
+
+function AddConnectionModal({ open, onCancelCb, onSaveCb, connection }) {
+  const connectionTypes = useRecoilValue(connectionTypesState);
+  const [connectionType, setConnectionType] = useState(
+    connectionTypes[0] || "",
+  );
+  const [connectionName, setConnectionName] = useState(connection?.name || "");
+  const [connectionDescription, setConnectionDescription] = useState(
+    connection?.description || "",
+  );
+  const [configFormData, setConfigFormData] = useState(
+    connection?.configuration || {},
+  );
+  const [localConnection, setLocalConnection] = useState(connection || {});
+  const [validationErrors, setValidationErrors] = useState([]);
+  const [connectionActive, setConnectionActive] = useState(false);
+  const [isRemoteBrowser, setIsRemoteBrowser] = useState(false);
+  const [remoteBrowserWsUrl, setRemoteBrowserWsUrl] = useState("");
+  const [remoteBrowserTimeout, setRemoteBrowserTimeout] = useState(10);
+  const [connectionWs, setConnectionWs] = useState(null);
+
+  const reloadConnections = useRecoilCallback(({ set }) => () => {
+    axios()
+      .get("/api/connections")
+      .then((res) => {
+        set(connectionsState, res.data);
+      })
+      .catch((err) => {
+        enqueueSnackbar("Error loading connections", {
+          variant: "error",
+        });
+      });
+  });
+
+  const validateForm = () => {
+    let errors = [];
+    if (!connectionName) {
+      errors.push("Connection name is required");
+    }
+
+    if (!connectionType) {
+      errors.push("Connection type is required");
+    }
+
+    if (
+      Object.keys(configFormData).length === 0 &&
+      connectionType.base_connection_type !== "oauth2"
+    ) {
+      errors.push("Configuration is required");
+    }
+
+    if (errors.length > 0) {
+      setValidationErrors(errors);
+      return false;
+    }
+
+    return true;
+  };
+
+  const handleCloseCb = () => {
+    setConnectionName("");
+    setConnectionDescription("");
+    setConfigFormData({});
+    onCancelCb();
+  };
+
+  const handleSaveCb = (conn) => {
+    if (!validateForm()) {
+      return;
+    }
+
+    onSaveCb(conn).then((res) => {
+      setConnectionName("");
+      setConnectionDescription("");
+      setConfigFormData({});
+      setLocalConnection({});
+
+      onCancelCb();
+    });
+  };
+
+  const testConnection = (conn) => () => {
+    if (!validateForm()) {
+      return;
+    }
+
+    // Save connection before testing
+    onSaveCb(conn).then((res) => {
+      setLocalConnection(res);
+
+      if (res.id) {
+        const ws = new Ws(
+          `${window.location.protocol === "https:" ? "wss" : "ws"}://${
+            process.env.NODE_ENV === "development"
+              ? process.env.REACT_APP_API_SERVER || "localhost:9000"
+              : window.location.host
+          }/ws/connections/${res.id}/activate`,
+        );
+
+        if (ws) {
+          setConnectionWs(ws);
+          ws.setOnMessage((evt) => {
+            const message = JSON.parse(evt.data);
+
+            if (message.event === "success") {
+              enqueueSnackbar("Connection test successful", {
+                variant: "success",
+              });
+              setConnectionActive(true);
+              ws.close();
+              onCancelCb();
+              reloadConnections();
+            }
+
+            if (message.event === "error") {
+              enqueueSnackbar(
+                `Connection test failed${
+                  message.error ? `: ${message.error}` : ""
+                }`,
+                {
+                  variant: "error",
+                },
+              );
+              ws.close();
+            }
+
+            if (
+              message.event === "output" &&
+              message.output &&
+              message.output.ws_url
+            ) {
+              setRemoteBrowserWsUrl(message.output.ws_url);
+              setRemoteBrowserTimeout(message.output.timeout);
+              setIsRemoteBrowser(true);
+            }
+          });
+
+          ws.send(
+            JSON.stringify({
+              event: "activate",
+            }),
+          );
+        }
+      }
+    });
+  };
+
+  useEffect(() => {
+    setTimeout(() => setConfigFormData(connection?.configuration || {}), 500);
+  }, [connection]);
+
+  useEffect(() => {
+    if (!open) {
+      return;
+    }
+
+    setValidationErrors([]);
+  }, [open, connectionName, connectionDescription, configFormData]);
+
+  useEffect(() => {
+    if (!open) {
+      return;
+    }
+
+    setLocalConnection(connection || {});
+    setConnectionName(connection?.name || "");
+    setConnectionDescription(connection?.description || "");
+    setConfigFormData(connection?.configuration || {});
+
+    if (connection) {
+      setConnectionType(
+        connectionTypes.find(
+          (t) =>
+            t.provider_slug === connection?.provider_slug &&
+            t.slug === connection?.connection_type_slug,
+        ),
+      );
+    } else {
+      setConnectionType(connectionTypes[0] || "");
+    }
+  }, [connection, connectionTypes, open]);
+
+  const actionButton = () => {
+    switch (connectionType?.base_connection_type) {
+      case "oauth2":
+        if (connection?.status === "Active") {
+          return (
+            <Button
+              variant="contained"
+              onClick={() => {
+                if (!validateForm()) {
+                  return;
+                }
+                onSaveCb({
+                  ...connection,
+                  ...localConnection,
+                  ...{
+                    provider_slug: connectionType?.provider_slug,
+                    connection_type_slug: connectionType?.slug,
+                    configuration: configFormData,
+                    base_connection_type: connectionType?.base_connection_type,
+                  },
+                }).then((res) => {
+                  setLocalConnection(res);
+                  onCancelCb();
+                });
+              }}
+            >
+              Save
+            </Button>
+          );
+        } else {
+          return (
+            <Button
+              variant="contained"
+              onClick={() => {
+                if (!validateForm()) {
+                  return;
+                }
+                onSaveCb({
+                  ...connection,
+                  ...localConnection,
+                  ...{
+                    provider_slug: connectionType?.provider_slug,
+                    connection_type_slug: connectionType?.slug,
+                    configuration: configFormData,
+                    base_connection_type: connectionType?.base_connection_type,
+                  },
+                }).then((res) => {
+                  setLocalConnection(res);
+                  window.open(connectionType?.metadata?.BtnLink);
+                });
+              }}
+            >
+              {connectionType?.metadata?.BtnText}
+            </Button>
+          );
+        }
+      case "browser_login":
+        return (
+          <div>
+            {!connectionActive && (
+              <Button
+                onClick={testConnection({
+                  ...connection,
+                  ...localConnection,
+                  ...{
+                    provider_slug: connectionType?.provider_slug,
+                    connection_type_slug: connectionType?.slug,
+                  },
+                })}
+                variant="contained"
+              >
+                Test Connection
+              </Button>
+            )}
+            {connectionActive && (
+              <Button
+                onClick={() =>
+                  handleSaveCb({
+                    ...connection,
+                    ...localConnection,
+                    ...{
+                      provider_slug: connectionType?.provider_slug,
+                      connection_type_slug: connectionType?.slug,
+                    },
+                  })
+                }
+                variant="contained"
+              >
+                Save
+              </Button>
+            )}
+          </div>
+        );
+      case "credentials":
+        return (
+          <div>
+            {!connectionActive &&
+              connectionType.provider_slug !== "promptly" && (
+                <Button
+                  onClick={testConnection({
+                    ...connection,
+                    ...localConnection,
+                    ...{
+                      provider_slug: connectionType?.provider_slug,
+                      connection_type_slug: connectionType?.slug,
+                      configuration: configFormData,
+                      base_connection_type:
+                        connectionType?.base_connection_type,
+                    },
+                  })}
+                  variant="outlined"
+                >
+                  Test Connection
+                </Button>
+              )}
+            &nbsp;
+            <Button
+              onClick={() => {
+                if (!validateForm()) {
+                  return;
+                }
+                onSaveCb({
+                  ...connection,
+                  ...localConnection,
+                  ...{
+                    provider_slug: connectionType?.provider_slug,
+                    connection_type_slug: connectionType?.slug,
+                    configuration: configFormData,
+                    base_connection_type: connectionType?.base_connection_type,
+                  },
+                }).then((conn) => {
+                  setLocalConnection(conn);
+                  if (conn.id) {
+                    onSaveCb({ ...conn, ...{ status: "Active" } }).then(() => {
+                      onCancelCb();
+                    });
+                  }
+                });
+              }}
+              variant="contained"
+            >
+              Save
+            </Button>
+          </div>
+        );
+      default:
+        return null;
+    }
+  };
+  return (
+    <Dialog open={open} onClose={handleCloseCb} fullWidth>
+      <DialogTitle>{`${connection ? "Edit" : "Add"} Connection`}</DialogTitle>
+      <DialogContent>
+        {validationErrors.length > 0 && (
+          <Alert severity="error">
+            <AlertTitle>Errors in the form</AlertTitle>
+            <ul>
+              {validationErrors.map((e, index) => (
+                <li key={index}>{e}</li>
+              ))}
+            </ul>
+          </Alert>
+        )}
+        <br />
+        <FormControl fullWidth sx={{ gap: "10px" }}>
+          <TextField
+            label="Name"
+            value={connectionName}
+            placeholder="Enter a name for your connection"
+            onChange={(e) => {
+              setConnectionName(e.target.value);
+              setLocalConnection({
+                ...localConnection,
+                name: e.target.value,
+              });
+            }}
+            variant="outlined"
+          />
+          <TextField
+            label="Description"
+            placeholder="Enter a description for your connection"
+            value={connectionDescription}
+            onChange={(e) => {
+              setConnectionDescription(e.target.value);
+              setLocalConnection({
+                ...localConnection,
+                description: e.target.value,
+              });
+            }}
+            multiline
+            variant="outlined"
+          />
+        </FormControl>
+        <FormControl fullWidth sx={{ margin: "20px 0 20px 0" }}>
+          <InputLabel id="connection-type-label">Connection Type</InputLabel>
+          <Select
+            label="Connection Type"
+            labelId="connection-type-label"
+            value={
+              connectionType
+                ? `${connectionType?.provider_slug}:${connectionType?.slug}`
+                : ""
+            }
+            onChange={(e) =>
+              setConnectionType(
+                connectionTypes.find(
+                  (t) =>
+                    t.provider_slug === e.target.value.split(":")[0] &&
+                    t.slug === e.target.value.split(":")[1],
+                ),
+              )
+            }
+          >
+            {connectionTypes
+              .map((t) => {
+                return { label: t.name, value: `${t.provider_slug}:${t.slug}` };
+              })
+              .map((option, index) => (
+                <MenuItem key={index} value={option.value}>
+                  {option.label}
+                </MenuItem>
+              ))}
+          </Select>
+        </FormControl>
+        <InputLabel>Configuration</InputLabel>
+        {connectionType?.base_connection_type === "oauth2" ? (
+          <div>
+            <TextField
+              fullWidth
+              disabled
+              value={JSON.stringify(configFormData)}
+              minRows={3}
+              maxRows={3}
+              multiline
+            />
+          </div>
+        ) : (
+          <ThemedJsonForm
+            schema={
+              connectionType?.config_schema || {
+                type: "object",
+                properties: {},
+              }
+            }
+            validator={validator}
+            uiSchema={{
+              ...(connectionType?.config_ui_schema || {}),
+              ...{
+                "ui:submitButtonOptions": {
+                  norender: true,
+                },
+                "ui:DescriptionFieldTemplate": () => null,
+                "ui:TitleFieldTemplate": () => null,
+              },
+            }}
+            formData={configFormData}
+            onChange={({ formData }) => {
+              setConnectionActive(false);
+              setConfigFormData(formData);
+              setLocalConnection({
+                ...localConnection,
+                configuration: formData,
+              });
+            }}
+            disableAdvanced={true}
+          />
+        )}
+        {isRemoteBrowser && (
+          <RemoteBrowser
+            wsUrl={remoteBrowserWsUrl}
+            timeout={remoteBrowserTimeout}
+            onClose={() => {
+              setIsRemoteBrowser(false);
+              setRemoteBrowserWsUrl(null);
+              connectionWs.send(
+                JSON.stringify({
+                  event: "input",
+                  input: "terminate",
+                }),
+              );
+            }}
+          />
+        )}
+      </DialogContent>
+      <DialogActions>
+        <Button onClick={handleCloseCb}>Cancel</Button>
+        {actionButton()}
+      </DialogActions>
+    </Dialog>
+  );
+}
+
+export default AddConnectionModal;

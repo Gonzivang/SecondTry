@@ -1,0 +1,24 @@
+name: 'Build client documentation'
+description: 'Generates client documentation using pdoc'
+inputs:
+  python-version:
+    description: 'Python version to use'
+    required: true
+    default: '3.x'
+runs:
+  using: 'composite'
+  steps:
+    - name: Setup Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ inputs.python-version }}
+
+    - name: Setup Poetry
+      uses: ./.github/actions/setup-poetry
+      with:
+        include_grpc: 'true'
+
+    - name: Build html documentation
+      shell: bash
+      run: |
+        poetry run pdoc pinecone '!pinecone.core' '!pinecone.utils' --favicon ./favicon-32x32.png --docformat google -o ./docs

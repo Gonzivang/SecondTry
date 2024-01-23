@@ -1,0 +1,38 @@
+[
+    {
+        "name": "invoke_lambda_find_ec2_instances_without_label",
+        "description": "find AWS EC2 instances without label by invoking the matching aws lambda.",
+        "parameters": {
+            "type": "object",
+            "properties": {},
+            "required": []
+        }
+    },
+    {
+        "name": "grant_production_permissions",
+        "description": "Grant an IAM user with temporary production permissions",
+        "parameters": {
+            "type": "object",
+            "properties": {},
+            "required": []
+        }
+    },
+    {
+        "name": "revoke_production_permissions",
+        "description": "Revoke an IAM user with production permissions",
+        "parameters": {
+            "type": "object",
+            "properties": {},
+            "required": []
+        }
+    },
+    {
+        "name": "troubleshoot_notification_service",
+        "description": "troubleshoot production outage of notification service",
+        "parameters": {
+            "type": "object",
+            "properties": {},
+            "required": []
+        }
+    }
+]

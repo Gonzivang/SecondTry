@@ -1,0 +1,87 @@
+name: CD | Publish Python 🐍 distributions 📦 to PyPI
+
+on:
+  release:
+    types: [published]
+
+  workflow_dispatch:
+
+jobs:
+  build-n-publish:
+    name: Build and publish Python 🐍 distributions 📦 to PyPI
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python 3.11.0
+        uses: actions/setup-python@v5
+        with:
+          python-version: 3.11.0
+
+      - name: Install pypa/build
+        run: >-
+          python -m
+          pip install
+          build
+          --user
+
+      - name: Build a binary wheel and a source tarball
+        run: >-
+          python -m
+          build
+          --sdist
+          --wheel
+          --outdir dist/
+          .
+
+      - name: Publish distribution 📦 to Test PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          password: ${{ secrets.TEST_PYPI_API_TOKEN }}
+          repository_url: https://test.pypi.org/legacy/
+
+      - name: Publish distribution 📦 to PyPI
+        # if: startsWith(github.ref, 'refs/tags')
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          password: ${{ secrets.PYPI_API_TOKEN }}
+
+  notify-runpod-workers:
+    name: Notify workers
+    needs: build-n-publish
+    strategy:
+      matrix:
+        repo:
+          [
+            "runpod-workers/worker-faster_whisper",
+            "runpod-workers/worker-stable_diffusion_v1",
+            "runpod-workers/worker-kandinsky",
+            "runpod-workers/worker-stable_diffusion_v2",
+            "runpod-workers/worker-template",
+            "runpod-workers/worker-whisper",
+            "runpod-workers/worker-esrgan",
+            "runpod-workers/worker-github_runner",
+            "runpod-workers/worker-a1111",
+            "runpod-workers/worker-dreambooth",
+            "runpod-workers/worker-bark",
+            "runpod-workers/worker-gpt",
+            "runpod-workers/worker-iseven",
+            "runpod-workers/worker-controlnet",
+            "runpod-workers/worker-blip",
+            "runpod-workers/worker-deforum",
+            runpod-workers/mock-worker,
+          ]
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Wait for propegation
+        run: sleep 300s
+        shell: bash
+
+      - name: Repository Dispatch
+        uses: peter-evans/repository-dispatch@v2
+        with:
+          token: ${{ secrets.RUNPOD_WORKERS_PAT }}
+          repository: ${{ matrix.repo }}
+          event-type: python-package-release

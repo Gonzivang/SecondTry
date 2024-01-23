@@ -1,0 +1,16 @@
+{
+  "name": "Pinecone TypeScript SDK",
+  "entryPoints": ["src/index.ts"],
+  "exclude": [],
+  "hideGenerator": true,
+  "includeVersion": true,
+  "excludeInternal": true,
+  "out": "docs",
+  "customCss": "./assets/docs-styles.css",
+  "navigationLinks": {
+    "Github Repo": "https://github.com/pinecone-io/pinecone-ts-client",
+    "Pinecone Docs": "https://docs.pinecone.io"
+  },
+  "treatWarningsAsErrors": false,
+  "validation": true
+}

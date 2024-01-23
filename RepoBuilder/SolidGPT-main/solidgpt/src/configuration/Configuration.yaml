@@ -1,0 +1,13 @@
+# config.yaml
+openai_api_key: 
+# gpt-3.5-turbo-16k/gpt-4/<fine-tune model>/...
+openai_model: gpt-3.5-turbo-16k
+# notion
+notion_api_key : 
+notion_page_id :
+
+azure_blob_connection_string:
+
+#Huggingface API
+HF_API_LLAMA2_BASE : 
+HF_API_KEY : 

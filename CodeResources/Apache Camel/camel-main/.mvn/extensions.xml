@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<extensions>
+    <extension>
+        <groupId>org.l2x6.cq</groupId>
+        <artifactId>cq-alias-fastinstall-quickly-extension</artifactId>
+        <version>4.4.7</version>
+    </extension>
+</extensions>

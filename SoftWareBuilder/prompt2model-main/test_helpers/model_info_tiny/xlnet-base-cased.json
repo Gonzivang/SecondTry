@@ -1,0 +1,7 @@
+{
+	"pretrained_model_name": "xlnet-base-cased",
+	"description": "bidirectional autoregressive language model",
+	"size_bytes": "1600000000",
+	"downloads": 100000,
+    "_comment": "THIS FILE SHOULD ONLY BE USED FOR TESTING PURPOSES."
+}
